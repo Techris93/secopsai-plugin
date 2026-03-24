@@ -1,0 +1,21 @@
+{
+  "id": "secopsai",
+  "name": "SecOpsAI",
+  "description": "Conversational SecOps for OpenClaw audit logs. Run detection pipelines, inspect findings, triage incidents, and get mitigation guidance.",
+  "configSchema": {
+    "type": "object",
+    "properties": {
+      "secopsaiPath": {
+        "type": "string",
+        "description": "Path to secopsai installation (default: ~/secopsai)",
+        "default": "~/secopsai"
+      },
+      "socDbPath": {
+        "type": "string",
+        "description": "Path to SOC database",
+        "default": "~/secopsai/data/openclaw/findings/openclaw_soc.db"
+      }
+    },
+    "additionalProperties": false
+  }
+}

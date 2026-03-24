@@ -1,0 +1,37 @@
+{
+  "name": "secopsai",
+  "version": "1.0.0",
+  "description": "Conversational SecOps for OpenClaw audit logs",
+  "type": "module",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "files": [
+    "dist/",
+    "openclaw.plugin.json"
+  ],
+  "scripts": {
+    "build": "tsc",
+    "prepublishOnly": "npm run build"
+  },
+  "dependencies": {
+    "@sinclair/typebox": "^0.34.0"
+  },
+  "devDependencies": {
+    "@types/node": "^25.5.0",
+    "typescript": "^5.6.0"
+  },
+  "openclaw": {
+    "extensions": [
+      "./dist/index.js"
+    ]
+  },
+  "keywords": [
+    "openclaw",
+    "secops",
+    "security",
+    "audit",
+    "plugin"
+  ],
+  "author": "Techris",
+  "license": "MIT"
+}
