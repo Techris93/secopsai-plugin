@@ -7,6 +7,8 @@ export interface SecOpsAIConfig {
   socDbPath?: string;
 }
 
+export const FINDING_ID_PATTERN = "^(OCF|SCM|EXFIL|POLICY|MALWARE|PRIVESC)-[A-Z0-9-]+$";
+
 export function resolvePath(inputPath: string): string {
   if (inputPath.startsWith("~")) {
     return resolve(homedir(), inputPath.slice(2));

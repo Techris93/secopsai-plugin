@@ -1,7 +1,7 @@
 {
   "id": "secopsai",
   "name": "SecOpsAI",
-  "description": "Conversational SecOps for OpenClaw audit logs. Run detection pipelines, inspect findings, triage incidents, and get mitigation guidance.",
+  "description": "Native SecOpsAI findings, triage orchestration, queued actions, and supply-chain investigation tools for OpenClaw.",
   "configSchema": {
     "type": "object",
     "properties": {

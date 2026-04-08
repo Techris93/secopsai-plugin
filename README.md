@@ -1,12 +1,12 @@
 # OpenClaw SecOpsAI Plugin
 
-Conversational SecOps for OpenClaw audit logs. Run detection pipelines, inspect findings, triage incidents, and get mitigation guidance.
+Native SecOpsAI findings, triage orchestration, queued action handling, and supply-chain investigation for OpenClaw.
 
 ## Installation
 
 ```bash
-# Install from npm
-openclaw plugins install @techris/openclaw-secopsai
+# Install from ClawHub
+openclaw plugins install clawhub:@techris93/secopsai
 
 # Or install from local source
 openclaw plugins install -l /path/to/openclaw-secopsai-plugin
@@ -39,38 +39,41 @@ Add to your OpenClaw configuration:
 
 | Tool | Description | Safety |
 |------|-------------|--------|
-| `secopsai_list_findings` | List SecOps findings with optional severity filter | Read-only |
-| `secopsai_refresh` | Run the detection pipeline to refresh findings | Write |
-| `secopsai_show_finding` | Get detailed information about a specific finding | Read-only |
-| `secopsai_triage` | Triage a finding (set disposition, status, note) | Write (optional) |
-| `secopsai_check_threats` | Check for malware or exfiltration indicators | Read-only |
-| `secopsai_mitigate` | Get recommended mitigation steps for a finding | Read-only |
-| `secopsai_search` | Search findings by keyword or pattern | Read-only |
-| `secopsai_stats` | Get statistics about the SOC database | Read-only |
+| `secopsai_list_findings` | List findings by status/severity | Read-only |
+| `secopsai_investigate_finding` | Run native triage investigation for a finding | Read-only |
+| `secopsai_close_finding` | Close a finding with disposition and analyst note | Write (optional) |
+| `secopsai_supply_chain_suggest_fp_action` | Suggest the best false-positive action for an SCM finding | Read-only |
+| `secopsai_triage_orchestrate` | Run the native triage orchestrator | Write (optional) |
+| `secopsai_triage_queue` | Show queued actions awaiting analyst approval | Read-only |
+| `secopsai_triage_apply_action` | Apply a queued triage action by ID | Write (optional) |
+| `secopsai_triage_summary` | Show orchestrator summary and report paths | Read-only |
 
 ## Usage Examples
 
 ```
-# List all critical findings
-secopsai_list_findings severity=critical
+# List open findings
+secopsai_list_findings status=open limit=20
 
-# Refresh the detection pipeline
-secopsai_refresh
+# Investigate a supply-chain finding
+secopsai_investigate_finding findingId=SCM-FA4BAE45589358A2
 
-# Show details of a specific finding
-secopsai_show_finding findingId=OCF-A1B2C3D4
+# Ask SecOpsAI what to do with a likely supply-chain false positive
+secopsai_supply_chain_suggest_fp_action findingId=SCM-FA4BAE45589358A2
 
-# Triage a finding as false positive
-secopsai_triage findingId=OCF-A1B2C3D4 disposition=false_positive status=closed note=" benign misconfiguration"
+# Run the native orchestrator
+secopsai_triage_orchestrate limit=20
 
-# Check for exfiltration threats
-secopsai_check_threats type=exfil severity=high
+# Review queued actions
+secopsai_triage_queue
 
-# Get mitigation steps
-secopsai_mitigate findingId=OCF-A1B2C3D4
+# Apply a queued action
+secopsai_triage_apply_action actionId=ACT-0001
 
-# Search findings by keyword
-secopsai_search query="unauthorized" severity=high
+# Close a finding with an explicit analyst note
+secopsai_close_finding findingId=SCM-FA4BAE45589358A2 disposition=expected_behavior note="Package not referenced locally."
+
+# Show orchestrator summary
+secopsai_triage_summary
 ```
 
 ## Development
@@ -92,11 +95,11 @@ openclaw gateway restart
 ## Publishing
 
 ```bash
-# Build before publishing
+# Build before packaging
 npm run build
 
-# Publish to npm
-npm publish --access public
+# Create a tarball for ClawHub upload
+npm pack
 ```
 
 ## License
