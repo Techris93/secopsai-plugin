@@ -1,5 +1,5 @@
-import { execSync } from "child_process";
-import { resolve } from "path";
+import { execFileSync } from "child_process";
+import { resolve, join } from "path";
 import { homedir } from "os";
 
 export interface SecOpsAIConfig {
@@ -16,17 +16,29 @@ export function resolvePath(inputPath: string): string {
   return resolve(inputPath);
 }
 
-export function runSecOpsAI(secopsPath: string, command: string): any {
+function secopsExecutable(secopsPath: string): string {
   const fullPath = resolvePath(secopsPath);
-  const cmd = `cd "${fullPath}" && source .venv/bin/activate && secopsai ${command} --json`;
-  const result = execSync(cmd, { encoding: "utf-8", shell: "/bin/bash" });
+  return join(fullPath, ".venv", "bin", "secopsai");
+}
+
+function pythonExecutable(secopsPath: string): string {
+  const fullPath = resolvePath(secopsPath);
+  return join(fullPath, ".venv", "bin", "python");
+}
+
+export function runSecOpsAI(secopsPath: string, args: string[]): any {
+  const result = execFileSync(secopsExecutable(secopsPath), [...args, "--json"], {
+    encoding: "utf-8",
+    cwd: resolvePath(secopsPath),
+  });
   return JSON.parse(result);
 }
 
-export function runPythonScript(secopsPath: string, scriptCommand: string): any {
-  const fullPath = resolvePath(secopsPath);
-  const cmd = `cd "${fullPath}" && source .venv/bin/activate && python ${scriptCommand}`;
-  const result = execSync(cmd, { encoding: "utf-8", shell: "/bin/bash" });
+export function runPythonScript(secopsPath: string, args: string[]): any {
+  const result = execFileSync(pythonExecutable(secopsPath), args, {
+    encoding: "utf-8",
+    cwd: resolvePath(secopsPath),
+  });
   try {
     return JSON.parse(result);
   } catch {

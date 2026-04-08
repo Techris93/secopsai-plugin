@@ -39,12 +39,11 @@ export default definePluginEntry({
         })),
       }),
       async execute(_id, params) {
-        const flags = [
-          params.status ? `--status ${params.status}` : "",
-          params.severity ? `--severity ${params.severity}` : "",
-          `--limit ${params.limit || 20}`,
-        ].filter(Boolean).join(" ");
-        const result = runSecOpsAI(secopsPath, `triage list ${flags}`.trim());
+        const args = ["triage", "list"];
+        if (params.status) args.push("--status", params.status);
+        if (params.severity) args.push("--severity", params.severity);
+        args.push("--limit", String(params.limit || 20));
+        const result = runSecOpsAI(secopsPath, args);
         const findings = Array.isArray(result.findings) ? result.findings : [];
         const lines = findings.map((finding: any) =>
           `- ${finding.finding_id} | ${finding.severity} | status=${finding.status} | disposition=${finding.disposition} | ${finding.title}`
@@ -70,10 +69,13 @@ export default definePluginEntry({
       }),
       async execute(_id, params) {
         const searchRoot = resolvePath(params.searchRoot || secopsPath);
-        const result = runSecOpsAI(
-          secopsPath,
-          `triage investigate ${params.findingId} --search-root "${searchRoot}"`
-        );
+        const result = runSecOpsAI(secopsPath, [
+          "triage",
+          "investigate",
+          params.findingId,
+          "--search-root",
+          searchRoot,
+        ]);
         return {
           content: [{
             type: "text",
@@ -105,10 +107,15 @@ export default definePluginEntry({
         }),
       }),
       async execute(_id, params) {
-        const result = runSecOpsAI(
-          secopsPath,
-          `triage close ${params.findingId} --disposition ${params.disposition} --note "${params.note.replace(/"/g, '\\"')}"`
-        );
+        const result = runSecOpsAI(secopsPath, [
+          "triage",
+          "close",
+          params.findingId,
+          "--disposition",
+          params.disposition,
+          "--note",
+          params.note,
+        ]);
         return {
           content: [{
             type: "text",
@@ -130,10 +137,13 @@ export default definePluginEntry({
       }),
       async execute(_id, params) {
         const searchRoot = resolvePath(params.searchRoot || secopsPath);
-        const result = runSecOpsAI(
-          secopsPath,
-          `supply-chain suggest-fp-action ${params.findingId} --search-root "${searchRoot}"`
-        );
+        const result = runSecOpsAI(secopsPath, [
+          "supply-chain",
+          "suggest-fp-action",
+          params.findingId,
+          "--search-root",
+          searchRoot,
+        ]);
         return {
           content: [{
             type: "text",
@@ -162,12 +172,16 @@ export default definePluginEntry({
       }),
       async execute(_id, params) {
         const searchRoot = resolvePath(params.searchRoot || secopsPath);
-        const flags = [
-          `--search-root "${searchRoot}"`,
-          `--limit ${params.limit || 20}`,
-          params.autoApplySafe === false ? "--no-auto-apply-safe" : "",
-        ].filter(Boolean).join(" ");
-        const result = runSecOpsAI(secopsPath, `triage orchestrate ${flags}`.trim());
+        const args = [
+          "triage",
+          "orchestrate",
+          "--search-root",
+          searchRoot,
+          "--limit",
+          String(params.limit || 20),
+        ];
+        if (params.autoApplySafe === false) args.push("--no-auto-apply-safe");
+        const result = runSecOpsAI(secopsPath, args);
         return {
           content: [{
             type: "text",
@@ -182,7 +196,7 @@ export default definePluginEntry({
       description: "Show pending triage actions that still require analyst approval.",
       parameters: Type.Object({}),
       async execute() {
-        const result = runSecOpsAI(secopsPath, "triage queue");
+        const result = runSecOpsAI(secopsPath, ["triage", "queue"]);
         return {
           content: [{
             type: "text",
@@ -206,8 +220,9 @@ export default definePluginEntry({
         })),
       }),
       async execute(_id, params) {
-        const flags = params.yes === false ? "" : "--yes";
-        const result = runSecOpsAI(secopsPath, `triage apply-action ${params.actionId} ${flags}`.trim());
+        const args = ["triage", "apply-action", params.actionId];
+        if (params.yes !== false) args.push("--yes");
+        const result = runSecOpsAI(secopsPath, args);
         return {
           content: [{
             type: "text",
@@ -222,7 +237,7 @@ export default definePluginEntry({
       description: "Summarize current orchestrator state, queue counts, and report locations.",
       parameters: Type.Object({}),
       async execute() {
-        const result = runSecOpsAI(secopsPath, "triage summary");
+        const result = runSecOpsAI(secopsPath, ["triage", "summary"]);
         return {
           content: [{
             type: "text",

@@ -1,6 +1,6 @@
 {
   "name": "@techris93/secopsai",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "Native SecOpsAI findings, triage, orchestration, and supply-chain investigation for OpenClaw",
   "type": "module",
   "main": "dist/index.js",

@@ -2,6 +2,8 @@
 
 Native SecOpsAI findings, triage orchestration, queued action handling, and supply-chain investigation for OpenClaw.
 
+This release executes the local `secopsai` venv binary directly with structured argv arguments instead of shell-building command strings, reducing command-injection risk compared with the earlier release.
+
 ## Installation
 
 ```bash
