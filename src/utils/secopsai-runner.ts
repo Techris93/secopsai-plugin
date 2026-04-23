@@ -5,6 +5,7 @@ import { homedir } from "os";
 export interface SecOpsAIConfig {
   secopsaiPath?: string;
   socDbPath?: string;
+  sessionDir?: string;
 }
 
 export const FINDING_ID_PATTERN = "^(OCF|SCM|EXFIL|POLICY|MALWARE|PRIVESC)-[A-Z0-9-]+$";

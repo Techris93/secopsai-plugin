@@ -26,13 +26,21 @@ Add to your OpenClaw configuration:
         "enabled": true,
         "config": {
           "secopsaiPath": "~/secopsai",
-          "socDbPath": "~/secopsai/data/openclaw/findings/openclaw_soc.db"
+          "socDbPath": "~/secopsai/data/openclaw/findings/openclaw_soc.db",
+          "sessionDir": "~/secopsai/data/sessions"
         }
       }
     }
   },
   "tools": {
-    "allow": ["secopsai_triage"]
+    "allow": [
+      "secopsai_close_finding",
+      "secopsai_triage_orchestrate",
+      "secopsai_triage_apply_action",
+      "secopsai_session_request_close_approval",
+      "secopsai_session_request_action_approval",
+      "secopsai_session_resolve_approval"
+    ]
   }
 }
 ```
@@ -43,7 +51,16 @@ Add to your OpenClaw configuration:
 |------|-------------|--------|
 | `secopsai_list_findings` | List findings by status/severity | Read-only |
 | `secopsai_investigate_finding` | Run native triage investigation for a finding | Read-only |
+| `secopsai_investigate_with_sources` | Investigate a finding and attach a source-backed research report | Read-only |
+| `secopsai_research_finding` | Generate a source-backed report for a finding | Read-only |
+| `secopsai_research_package` | Generate a source-backed package research report | Read-only |
+| `secopsai_review_release_with_sources` | Review one package release with source-backed evidence | Read-only |
 | `secopsai_close_finding` | Close a finding with disposition and analyst note | Write (optional) |
+| `secopsai_session_list` | List recent SecOpsAI investigation sessions | Read-only |
+| `secopsai_session_show` | Show one session with plan, approvals, and artifacts | Read-only |
+| `secopsai_session_request_close_approval` | Request a guarded close/disposition approval in a session | Write (optional) |
+| `secopsai_session_request_action_approval` | Request approval before applying a queued action | Write (optional) |
+| `secopsai_session_resolve_approval` | Approve or reject a pending session approval | Write (optional) |
 | `secopsai_supply_chain_suggest_fp_action` | Suggest the best false-positive action for an SCM finding | Read-only |
 | `secopsai_triage_orchestrate` | Run the native triage orchestrator | Write (optional) |
 | `secopsai_triage_queue` | Show queued actions awaiting analyst approval | Read-only |
@@ -58,6 +75,30 @@ secopsai_list_findings status=open limit=20
 
 # Investigate a supply-chain finding
 secopsai_investigate_finding findingId=SCM-FA4BAE45589358A2
+
+# Investigate with attached source-backed research
+secopsai_investigate_with_sources findingId=SCM-FA4BAE45589358A2
+
+# Generate source-backed finding research only
+secopsai_research_finding findingId=SCM-FA4BAE45589358A2
+
+# Review a package release with source-backed evidence
+secopsai_review_release_with_sources ecosystem=pypi packageName=litellm version=1.83.10
+
+# List recent sessions
+secopsai_session_list status=open limit=10
+
+# Show one session
+secopsai_session_show sessionId=SES-3f6a12bc45de
+
+# Request approval for a guarded close decision
+secopsai_session_request_close_approval sessionId=SES-3f6a12bc45de findingId=SCM-FA4BAE45589358A2 disposition=expected_behavior note="Package not referenced locally."
+
+# Request approval before applying a queued action
+secopsai_session_request_action_approval sessionId=SES-3f6a12bc45de actionId=ACT-0001 summary="Approve allowlist action for this package."
+
+# Approve and apply a pending session approval
+secopsai_session_resolve_approval sessionId=SES-3f6a12bc45de approvalId=APR-3f6a12bc45de decision=approved apply=true
 
 # Ask SecOpsAI what to do with a likely supply-chain false positive
 secopsai_supply_chain_suggest_fp_action findingId=SCM-FA4BAE45589358A2

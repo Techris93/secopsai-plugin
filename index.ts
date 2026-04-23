@@ -15,11 +15,29 @@ const findingIdField = Type.String({
 export default definePluginEntry({
   id: "secopsai",
   name: "SecOpsAI",
-  description: "Native SecOpsAI findings, triage, orchestration, and supply-chain investigation tools.",
+  description: "Native SecOpsAI findings, source-backed triage, session approvals, orchestration, and supply-chain investigation tools.",
 
   register(api: PluginAPI) {
     const config = api.config as SecOpsAIConfig;
     const secopsPath = config.secopsaiPath || "~/secopsai";
+    const sessionIdField = Type.String({
+      pattern: "^SES-[0-9a-f]{12}$",
+      description: "Session ID such as SES-3f6a12bc45de",
+    });
+    const approvalIdField = Type.String({
+      pattern: "^APR-[0-9a-f]{12}$",
+      description: "Approval ID such as APR-3f6a12bc45de",
+    });
+
+    function withDbPath(args: string[]): string[] {
+      if (config.socDbPath) args.push("--db-path", resolvePath(config.socDbPath));
+      return args;
+    }
+
+    function withSessionDir(args: string[]): string[] {
+      if (config.sessionDir) args.push("--session-dir", resolvePath(config.sessionDir));
+      return args;
+    }
 
     api.registerTool({
       name: "secopsai_list_findings",
@@ -39,7 +57,7 @@ export default definePluginEntry({
         })),
       }),
       async execute(_id, params) {
-        const args = ["triage", "list"];
+        const args = withDbPath(["triage", "list"]);
         if (params.status) args.push("--status", params.status);
         if (params.severity) args.push("--severity", params.severity);
         args.push("--limit", String(params.limit || 20));
@@ -59,23 +77,193 @@ export default definePluginEntry({
 
     api.registerTool({
       name: "secopsai_investigate_finding",
-      description: "Run native triage investigation for a finding and return the structured result.",
+      description: "Run native triage investigation for a finding and return the structured result, optionally reusing or creating a SecOpsAI session.",
       parameters: Type.Object({
         findingId: findingIdField,
         searchRoot: Type.Optional(Type.String({
           default: "~/secopsai",
           description: "Repository root used for dependency and local-reference checks",
         })),
+        sessionId: Type.Optional(sessionIdField),
+        openSession: Type.Optional(Type.Boolean({
+          default: true,
+          description: "Create a triage session automatically when sessionId is not supplied",
+        })),
       }),
       async execute(_id, params) {
         const searchRoot = resolvePath(params.searchRoot || secopsPath);
-        const result = runSecOpsAI(secopsPath, [
+        const args = withSessionDir(withDbPath([
           "triage",
           "investigate",
           params.findingId,
           "--search-root",
           searchRoot,
+        ]));
+        if (params.sessionId) {
+          args.push("--session-id", params.sessionId);
+        } else if (params.openSession !== false) {
+          args.push("--open-session");
+        }
+        const result = runSecOpsAI(secopsPath, args);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_investigate_with_sources",
+      description: "Run native triage investigation with an attached source-backed research report for the finding.",
+      parameters: Type.Object({
+        findingId: findingIdField,
+        searchRoot: Type.Optional(Type.String({
+          default: "~/secopsai",
+          description: "Repository root used for dependency and local-reference checks",
+        })),
+        sessionId: Type.Optional(sessionIdField),
+        openSession: Type.Optional(Type.Boolean({
+          default: true,
+          description: "Create a triage session automatically when sessionId is not supplied",
+        })),
+      }),
+      async execute(_id, params) {
+        const searchRoot = resolvePath(params.searchRoot || secopsPath);
+        const args = withSessionDir(withDbPath([
+          "triage",
+          "investigate",
+          params.findingId,
+          "--search-root",
+          searchRoot,
+          "--with-research",
+        ]));
+        if (params.sessionId) {
+          args.push("--session-id", params.sessionId);
+        } else if (params.openSession !== false) {
+          args.push("--open-session");
+        }
+        const result = runSecOpsAI(secopsPath, args);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_research_finding",
+      description: "Generate a source-backed research report for one finding, optionally attaching it to a session.",
+      parameters: Type.Object({
+        findingId: findingIdField,
+        searchRoot: Type.Optional(Type.String({
+          default: "~/secopsai",
+          description: "Repository root used for dependency and local-reference checks",
+        })),
+        sessionId: Type.Optional(sessionIdField),
+      }),
+      async execute(_id, params) {
+        const searchRoot = resolvePath(params.searchRoot || secopsPath);
+        const args = withSessionDir(withDbPath([
+          "research",
+          "finding",
+          params.findingId,
+          "--search-root",
+          searchRoot,
+        ]));
+        if (params.sessionId) args.push("--session-id", params.sessionId);
+        const result = runSecOpsAI(secopsPath, args);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_research_package",
+      description: "Generate a source-backed package research report using SecOpsAI's supply-chain and local-reference evidence.",
+      parameters: Type.Object({
+        ecosystem: Type.String({
+          enum: ["pypi", "npm"],
+          description: "Package ecosystem",
+        }),
+        packageName: Type.String({
+          description: "Package name",
+        }),
+        version: Type.Optional(Type.String({
+          description: "Optional version hint",
+        })),
+        searchRoot: Type.Optional(Type.String({
+          default: "~/secopsai",
+          description: "Repository root used for dependency and local-reference checks",
+        })),
+        sessionId: Type.Optional(sessionIdField),
+      }),
+      async execute(_id, params) {
+        const searchRoot = resolvePath(params.searchRoot || secopsPath);
+        const args = withSessionDir([
+          "research",
+          "package",
+          "--ecosystem",
+          params.ecosystem,
+          "--package",
+          params.packageName,
+          "--search-root",
+          searchRoot,
         ]);
+        if (params.version) args.push("--version", params.version);
+        if (params.sessionId) args.push("--session-id", params.sessionId);
+        const result = runSecOpsAI(secopsPath, args);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_review_release_with_sources",
+      description: "Review one package release with source-backed evidence. This is a release-review alias for package research.",
+      parameters: Type.Object({
+        ecosystem: Type.String({
+          enum: ["pypi", "npm"],
+          description: "Package ecosystem",
+        }),
+        packageName: Type.String({
+          description: "Package name",
+        }),
+        version: Type.Optional(Type.String({
+          description: "Optional version hint",
+        })),
+        searchRoot: Type.Optional(Type.String({
+          default: "~/secopsai",
+          description: "Repository root used for dependency and local-reference checks",
+        })),
+        sessionId: Type.Optional(sessionIdField),
+      }),
+      async execute(_id, params) {
+        const searchRoot = resolvePath(params.searchRoot || secopsPath);
+        const args = withSessionDir([
+          "research",
+          "package",
+          "--ecosystem",
+          params.ecosystem,
+          "--package",
+          params.packageName,
+          "--search-root",
+          searchRoot,
+        ]);
+        if (params.version) args.push("--version", params.version);
+        if (params.sessionId) args.push("--session-id", params.sessionId);
+        const result = runSecOpsAI(secopsPath, args);
         return {
           content: [{
             type: "text",
@@ -87,7 +275,7 @@ export default definePluginEntry({
 
     api.registerTool({
       name: "secopsai_close_finding",
-      description: "Close a finding with an explicit disposition and analyst note.",
+      description: "Close a finding with an explicit disposition and analyst note, optionally attaching the decision to a session. Prefer the session approval tools when you want a guarded close workflow.",
       parameters: Type.Object({
         findingId: findingIdField,
         disposition: Type.String({
@@ -105,9 +293,10 @@ export default definePluginEntry({
         note: Type.String({
           description: "Analyst note explaining why the finding is being closed",
         }),
+        sessionId: Type.Optional(sessionIdField),
       }),
       async execute(_id, params) {
-        const result = runSecOpsAI(secopsPath, [
+        const args = withSessionDir(withDbPath([
           "triage",
           "close",
           params.findingId,
@@ -115,7 +304,9 @@ export default definePluginEntry({
           params.disposition,
           "--note",
           params.note,
-        ]);
+        ]));
+        if (params.sessionId) args.push("--session-id", params.sessionId);
+        const result = runSecOpsAI(secopsPath, args);
         return {
           content: [{
             type: "text",
@@ -172,14 +363,14 @@ export default definePluginEntry({
       }),
       async execute(_id, params) {
         const searchRoot = resolvePath(params.searchRoot || secopsPath);
-        const args = [
+        const args = withDbPath([
           "triage",
           "orchestrate",
           "--search-root",
           searchRoot,
           "--limit",
           String(params.limit || 20),
-        ];
+        ]);
         if (params.autoApplySafe === false) args.push("--no-auto-apply-safe");
         const result = runSecOpsAI(secopsPath, args);
         return {
@@ -208,7 +399,7 @@ export default definePluginEntry({
 
     api.registerTool({
       name: "secopsai_triage_apply_action",
-      description: "Apply a queued triage action by action ID.",
+      description: "Apply a queued triage action by action ID, optionally attaching it to an investigation session. Prefer requesting session approval first when you want explicit human signoff.",
       parameters: Type.Object({
         actionId: Type.String({
           pattern: "^ACT-[0-9]+$",
@@ -218,10 +409,12 @@ export default definePluginEntry({
           default: true,
           description: "Apply without further confirmation",
         })),
+        sessionId: Type.Optional(sessionIdField),
       }),
       async execute(_id, params) {
-        const args = ["triage", "apply-action", params.actionId];
+        const args = withSessionDir(withDbPath(["triage", "apply-action", params.actionId]));
         if (params.yes !== false) args.push("--yes");
+        if (params.sessionId) args.push("--session-id", params.sessionId);
         const result = runSecOpsAI(secopsPath, args);
         return {
           content: [{
@@ -237,7 +430,186 @@ export default definePluginEntry({
       description: "Summarize current orchestrator state, queue counts, and report locations.",
       parameters: Type.Object({}),
       async execute() {
-        const result = runSecOpsAI(secopsPath, ["triage", "summary"]);
+        const result = runSecOpsAI(secopsPath, withDbPath(["triage", "summary"]));
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_session_list",
+      description: "List recent SecOpsAI investigation sessions, optionally filtered by status or finding.",
+      parameters: Type.Object({
+        status: Type.Optional(Type.String({
+          enum: ["open", "closed"],
+          description: "Filter sessions by status",
+        })),
+        findingId: Type.Optional(findingIdField),
+        limit: Type.Optional(Type.Number({
+          default: 20,
+          description: "Maximum number of sessions to return",
+        })),
+      }),
+      async execute(_id, params) {
+        const args = withSessionDir(["session", "list"]);
+        if (params.status) args.push("--status", params.status);
+        if (params.findingId) args.push("--finding-id", params.findingId);
+        args.push("--limit", String(params.limit || 20));
+        const result = runSecOpsAI(secopsPath, args);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_session_show",
+      description: "Show one SecOpsAI investigation session, including plan steps, approvals, and artifacts.",
+      parameters: Type.Object({
+        sessionId: sessionIdField,
+      }),
+      async execute(_id, params) {
+        const result = runSecOpsAI(secopsPath, withSessionDir(["session", "show", params.sessionId]));
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_session_request_close_approval",
+      description: "Request an approval inside a session for a guarded finding close/disposition decision.",
+      parameters: Type.Object({
+        sessionId: sessionIdField,
+        findingId: findingIdField,
+        disposition: Type.String({
+          enum: [
+            "true_positive",
+            "false_positive",
+            "expected_behavior",
+            "accepted_risk",
+            "exception_granted",
+            "needs_review",
+            "tune_policy",
+          ],
+          description: "Disposition to request approval for",
+        }),
+        note: Type.String({
+          description: "Analyst note / rationale for the approval request",
+        }),
+        status: Type.Optional(Type.String({
+          enum: ["triaged", "closed"],
+          default: "closed",
+          description: "Target finding status if approved",
+        })),
+        summary: Type.Optional(Type.String({
+          description: "Optional human-readable approval summary",
+        })),
+      }),
+      async execute(_id, params) {
+        const args = withSessionDir(withDbPath([
+          "session",
+          "request-approval",
+          params.sessionId,
+          "--type",
+          "triage_close",
+          "--finding-id",
+          params.findingId,
+          "--disposition",
+          params.disposition,
+          "--note",
+          params.note,
+          "--status",
+          params.status || "closed",
+        ]));
+        if (params.summary) args.push("--summary", params.summary);
+        const result = runSecOpsAI(secopsPath, args);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    }, { optional: true });
+
+    api.registerTool({
+      name: "secopsai_session_request_action_approval",
+      description: "Request an approval inside a session before applying a queued triage action.",
+      parameters: Type.Object({
+        sessionId: sessionIdField,
+        actionId: Type.String({
+          pattern: "^ACT-[0-9]+$",
+          description: "Queued action ID such as ACT-0001",
+        }),
+        summary: Type.Optional(Type.String({
+          description: "Optional human-readable approval summary",
+        })),
+      }),
+      async execute(_id, params) {
+        const args = withSessionDir(withDbPath([
+          "session",
+          "request-approval",
+          params.sessionId,
+          "--type",
+          "triage_action",
+          "--action-id",
+          params.actionId,
+        ]));
+        if (params.summary) args.push("--summary", params.summary);
+        const result = runSecOpsAI(secopsPath, args);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    }, { optional: true });
+
+    api.registerTool({
+      name: "secopsai_session_resolve_approval",
+      description: "Approve or reject a pending session approval, optionally applying the approved change immediately.",
+      parameters: Type.Object({
+        sessionId: sessionIdField,
+        approvalId: approvalIdField,
+        decision: Type.String({
+          enum: ["approved", "rejected"],
+          description: "Final approval decision",
+        }),
+        apply: Type.Optional(Type.Boolean({
+          default: true,
+          description: "Apply the approved change immediately when decision is approved",
+        })),
+        note: Type.Optional(Type.String({
+          description: "Optional approval decision note",
+        })),
+        decidedBy: Type.Optional(Type.String({
+          description: "Optional analyst or approver identifier",
+        })),
+      }),
+      async execute(_id, params) {
+        const args = withSessionDir(withDbPath([
+          "session",
+          "resolve-approval",
+          params.sessionId,
+          params.approvalId,
+          params.decision === "approved" ? "--approve" : "--reject",
+        ]));
+        if (params.note) args.push("--note", params.note);
+        if (params.decidedBy) args.push("--decided-by", params.decidedBy);
+        if (params.apply !== false && params.decision === "approved") args.push("--apply");
+        const result = runSecOpsAI(secopsPath, args);
         return {
           content: [{
             type: "text",

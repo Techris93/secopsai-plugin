@@ -1,7 +1,7 @@
 {
   "id": "secopsai",
   "name": "SecOpsAI",
-  "description": "Native SecOpsAI findings, triage orchestration, queued actions, and supply-chain investigation tools for OpenClaw.",
+  "description": "Native SecOpsAI findings, source-backed investigation, session approvals, queued actions, and supply-chain review tools for OpenClaw.",
   "configSchema": {
     "type": "object",
     "properties": {
@@ -14,6 +14,11 @@
         "type": "string",
         "description": "Path to SOC database",
         "default": "~/secopsai/data/openclaw/findings/openclaw_soc.db"
+      },
+      "sessionDir": {
+        "type": "string",
+        "description": "Path to SecOpsAI investigation session storage",
+        "default": "~/secopsai/data/sessions"
       }
     },
     "additionalProperties": false
