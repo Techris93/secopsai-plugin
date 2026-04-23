@@ -55,16 +55,16 @@ Add to your OpenClaw configuration:
 | `secopsai_research_finding` | Generate a source-backed report for a finding | Read-only |
 | `secopsai_research_package` | Generate a source-backed package research report | Read-only |
 | `secopsai_review_release_with_sources` | Review one package release with source-backed evidence | Read-only |
-| `secopsai_close_finding` | Close a finding with disposition and analyst note | Write (optional) |
+| `secopsai_close_finding` | Request approval to close a finding | Write approval request (optional) |
 | `secopsai_session_list` | List recent SecOpsAI investigation sessions | Read-only |
 | `secopsai_session_show` | Show one session with plan, approvals, and artifacts | Read-only |
 | `secopsai_session_request_close_approval` | Request a guarded close/disposition approval in a session | Write (optional) |
 | `secopsai_session_request_action_approval` | Request approval before applying a queued action | Write (optional) |
 | `secopsai_session_resolve_approval` | Approve or reject a pending session approval | Write (optional) |
 | `secopsai_supply_chain_suggest_fp_action` | Suggest the best false-positive action for an SCM finding | Read-only |
-| `secopsai_triage_orchestrate` | Run the native triage orchestrator | Write (optional) |
+| `secopsai_triage_orchestrate` | Run the native triage orchestrator with auto-apply disabled | Write queue update (optional) |
 | `secopsai_triage_queue` | Show queued actions awaiting analyst approval | Read-only |
-| `secopsai_triage_apply_action` | Apply a queued triage action by ID | Write (optional) |
+| `secopsai_triage_apply_action` | Request approval to apply a queued action | Write approval request (optional) |
 | `secopsai_triage_summary` | Show orchestrator summary and report paths | Read-only |
 
 ## Usage Examples
@@ -109,15 +109,17 @@ secopsai_triage_orchestrate limit=20
 # Review queued actions
 secopsai_triage_queue
 
-# Apply a queued action
-secopsai_triage_apply_action actionId=ACT-0001
+# Request approval for a queued action
+secopsai_triage_apply_action sessionId=SES-3f6a12bc45de actionId=ACT-0001
 
-# Close a finding with an explicit analyst note
-secopsai_close_finding findingId=SCM-FA4BAE45589358A2 disposition=expected_behavior note="Package not referenced locally."
+# Request approval to close a finding with an explicit analyst note
+secopsai_close_finding sessionId=SES-3f6a12bc45de findingId=SCM-FA4BAE45589358A2 disposition=expected_behavior note="Package not referenced locally."
 
 # Show orchestrator summary
 secopsai_triage_summary
 ```
+
+Write-facing tools request approvals or run with auto-apply disabled. Use `secopsai_session_resolve_approval decision=approved apply=true` to apply an approved close or queued action.
 
 ## Development
 
