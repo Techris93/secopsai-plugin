@@ -8,7 +8,7 @@ export interface SecOpsAIConfig {
   sessionDir?: string;
 }
 
-export const FINDING_ID_PATTERN = "^(OCF|SCM|EXFIL|POLICY|MALWARE|PRIVESC)-[A-Z0-9-]+$";
+export const FINDING_ID_PATTERN = "^(OCF|SCM|EDGE|EXFIL|POLICY|MALWARE|PRIVESC)-[A-Z0-9-]+$";
 
 export function resolvePath(inputPath: string): string {
   if (inputPath.startsWith("~")) {

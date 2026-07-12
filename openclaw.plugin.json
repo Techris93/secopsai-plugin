@@ -1,7 +1,7 @@
 {
   "id": "secopsai",
   "name": "SecOpsAI",
-  "description": "Native SecOpsAI findings, source-backed investigation, session approvals, queued actions, and supply-chain review tools for OpenClaw.",
+  "description": "Native SecOpsAI findings, Edge asset context, source-backed investigation, session approvals, queued actions, and supply-chain review tools for OpenClaw.",
   "configSchema": {
     "type": "object",
     "properties": {

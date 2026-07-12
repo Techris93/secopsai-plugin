@@ -9,7 +9,7 @@ import {
 
 const findingIdField = Type.String({
   pattern: FINDING_ID_PATTERN,
-  description: "Finding ID such as SCM-..., OCF-..., EXFIL-..., or POLICY-...",
+  description: "Finding ID such as EDGE-..., SCM-..., OCF-..., EXFIL-..., or POLICY-...",
 });
 
 export default definePluginEntry({
@@ -70,6 +70,89 @@ export default definePluginEntry({
           content: [{
             type: "text",
             text: lines.length ? lines.join("\n") : "No findings matched the query.",
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_edge_assets",
+      description: "List network assets imported from SecOpsAI Edge into the local Core asset graph.",
+      parameters: Type.Object({
+        limit: Type.Optional(Type.Number({
+          default: 50,
+          minimum: 1,
+          maximum: 500,
+          description: "Maximum Edge assets to return",
+        })),
+      }),
+      async execute(_id, params) {
+        const args = withDbPath(["graph", "assets", "--limit", String(params.limit || 50)]);
+        const result = runSecOpsAI(secopsPath, args);
+        const assets = Array.isArray(result.assets) ? result.assets : [];
+        const lines = assets.map((asset: any) =>
+          `- ${asset.ip_address || "unknown-ip"} | status=${asset.status || "unknown"} | vendor=${asset.vendor || "unknown"} | host=${asset.hostname || "unknown"}`
+        );
+        return {
+          content: [{
+            type: "text",
+            text: lines.length ? lines.join("\n") : "No SecOpsAI Edge assets are present in the Core graph.",
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_edge_changes",
+      description: "Show recently changed Edge graph nodes and relationships from the local Core store.",
+      parameters: Type.Object({
+        limit: Type.Optional(Type.Number({
+          default: 25,
+          minimum: 1,
+          maximum: 200,
+          description: "Maximum recent graph changes to return",
+        })),
+      }),
+      async execute(_id, params) {
+        const args = withDbPath(["graph", "changes", "--limit", String(params.limit || 25)]);
+        const result = runSecOpsAI(secopsPath, args);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_edge_findings",
+      description: "List SecOpsAI Edge-origin findings from the canonical local Core triage store.",
+      parameters: Type.Object({
+        status: Type.Optional(Type.String({
+          enum: ["open", "in_review", "closed"],
+          description: "Filter Edge findings by Core triage status",
+        })),
+        limit: Type.Optional(Type.Number({
+          default: 20,
+          minimum: 1,
+          maximum: 200,
+          description: "Maximum Edge findings to return",
+        })),
+      }),
+      async execute(_id, params) {
+        const args = withDbPath(["triage", "list", "--source", "secopsai_edge"]);
+        if (params.status) args.push("--status", params.status);
+        args.push("--limit", String(params.limit || 20));
+        const result = runSecOpsAI(secopsPath, args);
+        const findings = Array.isArray(result.findings) ? result.findings : [];
+        const lines = findings.map((finding: any) =>
+          `- ${finding.finding_id} | ${finding.severity} | status=${finding.status} | ${finding.title}`
+        );
+        return {
+          content: [{
+            type: "text",
+            text: lines.length ? lines.join("\n") : "No SecOpsAI Edge findings matched the query.",
           }],
         };
       },
