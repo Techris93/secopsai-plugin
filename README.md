@@ -60,8 +60,8 @@ Add to your OpenClaw configuration:
 | `secopsai_investigate_finding` | Run native triage investigation for a finding | Read-only |
 | `secopsai_investigate_with_sources` | Investigate a finding and attach a source-backed research report | Read-only |
 | `secopsai_research_finding` | Generate a source-backed report for a finding | Read-only |
-| `secopsai_research_package` | Generate a source-backed package research report | Read-only |
-| `secopsai_review_release_with_sources` | Review one package release with source-backed evidence | Read-only |
+| `secopsai_research_package` | Generate a source-backed package research report across Core-supported ecosystems | Read-only |
+| `secopsai_review_release_with_sources` | Review one package release across Core-supported ecosystems | Read-only |
 | `secopsai_close_finding` | Request approval to close a finding | Write approval request (optional) |
 | `secopsai_session_list` | List recent SecOpsAI investigation sessions | Read-only |
 | `secopsai_session_show` | Show one session with plan, approvals, and artifacts | Read-only |
@@ -99,6 +99,7 @@ secopsai_research_finding findingId=SCM-FA4BAE45589358A2
 
 # Review a package release with source-backed evidence
 secopsai_review_release_with_sources ecosystem=pypi packageName=litellm version=1.83.10
+secopsai_research_package ecosystem=nuget packageName=Braintree.Payments.SDK version=4.2.1
 
 # List recent sessions
 secopsai_session_list status=open limit=10

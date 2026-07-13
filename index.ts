@@ -18,6 +18,21 @@ const authorizedPrivateCidrField = Type.String({
   description: "Authorized private IPv4 CIDR; Edge applies its own /20-or-narrower and host-count safety policy",
 });
 
+const supportedResearchEcosystems = [
+  "chrome-web-store",
+  "crates",
+  "github",
+  "go",
+  "huggingface",
+  "maven",
+  "npm",
+  "nuget",
+  "open-vsx",
+  "packagist",
+  "pypi",
+  "rubygems",
+] as const;
+
 export default definePluginEntry({
   id: "secopsai",
   name: "SecOpsAI",
@@ -333,8 +348,8 @@ export default definePluginEntry({
       description: "Generate a source-backed package research report using SecOpsAI's supply-chain and local-reference evidence.",
       parameters: Type.Object({
         ecosystem: Type.String({
-          enum: ["pypi", "npm"],
-          description: "Package ecosystem",
+          enum: [...supportedResearchEcosystems],
+          description: "Package ecosystem supported by the Core research engine",
         }),
         packageName: Type.String({
           description: "Package name",
@@ -377,8 +392,8 @@ export default definePluginEntry({
       description: "Review one package release with source-backed evidence. This is a release-review alias for package research.",
       parameters: Type.Object({
         ecosystem: Type.String({
-          enum: ["pypi", "npm"],
-          description: "Package ecosystem",
+          enum: [...supportedResearchEcosystems],
+          description: "Package ecosystem supported by the Core research engine",
         }),
         packageName: Type.String({
           description: "Package name",
