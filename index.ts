@@ -2,6 +2,7 @@ import { definePluginEntry, type PluginAPI } from "./src/types/openclaw-sdk.js";
 import { Type } from "@sinclair/typebox";
 import {
   FINDING_ID_PATTERN,
+  runEdgeScript,
   runSecOpsAI,
   resolvePath,
   type SecOpsAIConfig,
@@ -12,6 +13,11 @@ const findingIdField = Type.String({
   description: "Finding ID such as EDGE-..., SCM-..., OCF-..., EXFIL-..., or POLICY-...",
 });
 
+const authorizedPrivateCidrField = Type.String({
+  pattern: "^(?:10(?:\\.\\d{1,3}){3}|172\\.(?:1[6-9]|2\\d|3[01])(?:\\.\\d{1,3}){2}|192\\.168(?:\\.\\d{1,3}){2})/(?:[1-9]|[12]\\d|3[0-2])$",
+  description: "Authorized private IPv4 CIDR; Edge applies its own /20-or-narrower and host-count safety policy",
+});
+
 export default definePluginEntry({
   id: "secopsai",
   name: "SecOpsAI",
@@ -20,6 +26,7 @@ export default definePluginEntry({
   register(api: PluginAPI) {
     const config = api.config as SecOpsAIConfig;
     const secopsPath = config.secopsaiPath || "~/secopsai";
+    const edgePath = config.edgePath || "~/secopsai-edge";
     const sessionIdField = Type.String({
       pattern: "^SES-[0-9a-f]{12}$",
       description: "Session ID such as SES-3f6a12bc45de",
@@ -97,6 +104,36 @@ export default definePluginEntry({
           content: [{
             type: "text",
             text: lines.length ? lines.join("\n") : "No SecOpsAI Edge assets are present in the Core graph.",
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_edge_worker_status",
+      description: "Check the local SecOpsAI Edge worker service without starting, stopping, or scanning anything.",
+      parameters: Type.Object({}),
+      async execute() {
+        return {
+          content: [{
+            type: "text",
+            text: runEdgeScript(edgePath, ["worker", "status"]),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
+      name: "secopsai_edge_scan_preview",
+      description: "Preview the safe local Nmap commands for an authorized private CIDR; this does not execute a scan or upload data.",
+      parameters: Type.Object({
+        targetCidr: authorizedPrivateCidrField,
+      }),
+      async execute(_id, params) {
+        return {
+          content: [{
+            type: "text",
+            text: runEdgeScript(edgePath, ["preview", params.targetCidr]),
           }],
         };
       },

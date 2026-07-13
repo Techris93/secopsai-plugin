@@ -4,6 +4,7 @@ import { homedir } from "os";
 
 export interface SecOpsAIConfig {
   secopsaiPath?: string;
+  edgePath?: string;
   socDbPath?: string;
   sessionDir?: string;
 }
@@ -45,4 +46,14 @@ export function runPythonScript(secopsPath: string, args: string[]): any {
   } catch {
     return { output: result.trim() };
   }
+}
+
+export function runEdgeScript(edgePath: string, args: string[]): string {
+  const fullPath = resolvePath(edgePath);
+  return execFileSync(join(fullPath, "scripts", "edge"), args, {
+    encoding: "utf-8",
+    cwd: fullPath,
+    timeout: 30_000,
+    maxBuffer: 1024 * 1024,
+  }).trim();
 }

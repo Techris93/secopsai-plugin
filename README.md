@@ -26,6 +26,7 @@ Add to your OpenClaw configuration:
         "enabled": true,
         "config": {
           "secopsaiPath": "~/secopsai",
+          "edgePath": "~/secopsai-edge",
           "socDbPath": "~/secopsai/data/openclaw/findings/openclaw_soc.db",
           "sessionDir": "~/secopsai/data/sessions"
         }
@@ -51,6 +52,8 @@ Add to your OpenClaw configuration:
 |------|-------------|--------|
 | `secopsai_list_findings` | List findings by status/severity | Read-only |
 | `secopsai_edge_assets` | List Edge-discovered assets imported into Core | Read-only |
+| `secopsai_edge_worker_status` | Check the local Edge worker service | Read-only |
+| `secopsai_edge_scan_preview` | Preview safe Nmap commands for an authorized private CIDR | Read-only |
 | `secopsai_edge_changes` | Show recent Edge graph changes | Read-only |
 | `secopsai_edge_sync_status` | Show Edge-to-Core sync freshness | Read-only |
 | `secopsai_edge_findings` | List Edge-origin Core findings | Read-only |
@@ -79,6 +82,8 @@ secopsai_list_findings status=open limit=20
 
 # Review Edge assets and changes already synced into Core
 secopsai_edge_assets limit=50
+secopsai_edge_worker_status
+secopsai_edge_scan_preview targetCidr=192.168.1.0/24
 secopsai_edge_changes limit=25
 secopsai_edge_sync_status limit=20
 secopsai_edge_findings status=open limit=20

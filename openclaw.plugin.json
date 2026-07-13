@@ -10,6 +10,11 @@
         "description": "Path to secopsai installation (default: ~/secopsai)",
         "default": "~/secopsai"
       },
+      "edgePath": {
+        "type": "string",
+        "description": "Path to SecOpsAI Edge installation used for local read-only operator checks (default: ~/secopsai-edge)",
+        "default": "~/secopsai-edge"
+      },
       "socDbPath": {
         "type": "string",
         "description": "Path to SOC database",
