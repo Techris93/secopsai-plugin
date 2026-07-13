@@ -61,8 +61,8 @@ test("Edge tools invoke the canonical Core CLI contract", async (t) => {
   const tools = registerTools({ secopsaiPath: fake.root, edgePath: fakeEdge.root, socDbPath: dbPath });
 
   assert.deepEqual(
-    ["secopsai_edge_assets", "secopsai_edge_worker_status", "secopsai_edge_scan_preview", "secopsai_edge_request_scan", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"].filter((name) => tools.has(name)),
-    ["secopsai_edge_assets", "secopsai_edge_worker_status", "secopsai_edge_scan_preview", "secopsai_edge_request_scan", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"],
+    ["secopsai_edge_assets", "secopsai_edge_worker_status", "secopsai_edge_scan_preview", "secopsai_edge_request_scan", "secopsai_edge_request_report", "secopsai_edge_request_worker_action", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"].filter((name) => tools.has(name)),
+    ["secopsai_edge_assets", "secopsai_edge_worker_status", "secopsai_edge_scan_preview", "secopsai_edge_request_scan", "secopsai_edge_request_report", "secopsai_edge_request_worker_action", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"],
   );
 
   const assets = await tools.get("secopsai_edge_assets").execute("call-1", { limit: 7 });
@@ -104,6 +104,45 @@ test("Edge tools invoke the canonical Core CLI contract", async (t) => {
       "Queue authorized Edge scan for 192.168.1.7/24",
       "--payload",
       '{"kind":"edge_scan","target_cidr":"192.168.1.7/24","include_wifi":true}',
+      "--json",
+    ],
+  );
+
+  const reportRequest = await tools.get("secopsai_edge_request_report").execute("call-3c", {});
+  assert.match(reportRequest.content[0].text, /APR-abcdef123456/);
+  assert.deepEqual(
+    (await readFile(fake.argsFile, "utf8")).trim().split("\n"),
+    [
+      "session",
+      "request-approval",
+      "SES-abcdef123456",
+      "--type",
+      "custom",
+      "--summary",
+      "Generate the current Edge report",
+      "--payload",
+      '{"kind":"edge_report"}',
+      "--json",
+    ],
+  );
+
+  const workerRequest = await tools.get("secopsai_edge_request_worker_action").execute("call-3d", {
+    action: "start",
+    sessionId: "SES-abcdef123456",
+  });
+  assert.match(workerRequest.content[0].text, /APR-abcdef123456/);
+  assert.deepEqual(
+    (await readFile(fake.argsFile, "utf8")).trim().split("\n"),
+    [
+      "session",
+      "request-approval",
+      "SES-abcdef123456",
+      "--type",
+      "custom",
+      "--summary",
+      "Apply Edge worker action: start",
+      "--payload",
+      '{"kind":"edge_worker","action":"start"}',
       "--json",
     ],
   );
