@@ -61,6 +61,11 @@ export default definePluginEntry({
       return args;
     }
 
+    function withEdgeRoot(args: string[]): string[] {
+      args.push("--edge-root", resolvePath(edgePath));
+      return args;
+    }
+
     api.registerTool({
       name: "secopsai_list_findings",
       description: "List findings from the local SecOpsAI SOC store by status, severity, or limit.",
@@ -153,6 +158,61 @@ export default definePluginEntry({
         };
       },
     });
+
+    api.registerTool({
+      name: "secopsai_edge_request_scan",
+      description: "Create a Core session and request approval before queueing an authorized private-CIDR scan through the local Edge worker. This does not scan until an operator approves it.",
+      parameters: Type.Object({
+        targetCidr: authorizedPrivateCidrField,
+        includeWifi: Type.Optional(Type.Boolean({
+          default: false,
+          description: "Include metadata-only Wi-Fi inventory in the queued scan",
+        })),
+        sessionId: Type.Optional(sessionIdField),
+      }),
+      async execute(_id, params) {
+        let sessionId = params.sessionId;
+        if (!sessionId) {
+          const sessionResult = runSecOpsAI(secopsPath, withSessionDir([
+            "session",
+            "create",
+            "--kind",
+            "edge_scan",
+            "--title",
+            `Edge scan request for ${params.targetCidr}`,
+            "--metadata",
+            JSON.stringify({
+              target_cidr: params.targetCidr,
+              include_wifi: params.includeWifi === true,
+            }),
+          ]));
+          sessionId = String(sessionResult.session?.session_id || "");
+          if (!sessionId) throw new Error("Core did not return a session ID for the Edge scan request");
+        }
+
+        const approval = runSecOpsAI(secopsPath, withSessionDir([
+          "session",
+          "request-approval",
+          sessionId,
+          "--type",
+          "custom",
+          "--summary",
+          `Queue authorized Edge scan for ${params.targetCidr}`,
+          "--payload",
+          JSON.stringify({
+            kind: "edge_scan",
+            target_cidr: params.targetCidr,
+            include_wifi: params.includeWifi === true,
+          }),
+        ]));
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({ sessionId, ...approval }, null, 2),
+          }],
+        };
+      },
+    }, { optional: true });
 
     api.registerTool({
       name: "secopsai_edge_changes",
@@ -778,6 +838,7 @@ export default definePluginEntry({
         ]));
         if (params.note) args.push("--note", params.note);
         if (params.decidedBy) args.push("--decided-by", params.decidedBy);
+        withEdgeRoot(args);
         if (params.apply !== false && params.decision === "approved") args.push("--apply");
         const result = runSecOpsAI(secopsPath, args);
         return {

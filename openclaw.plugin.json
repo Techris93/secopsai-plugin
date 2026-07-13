@@ -12,7 +12,7 @@
       },
       "edgePath": {
         "type": "string",
-        "description": "Path to SecOpsAI Edge installation used for local read-only operator checks (default: ~/secopsai-edge)",
+        "description": "Path to SecOpsAI Edge installation used for worker checks, previews, and approval-gated scan queueing (default: ~/secopsai-edge)",
         "default": "~/secopsai-edge"
       },
       "socDbPath": {
