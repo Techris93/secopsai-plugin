@@ -215,6 +215,92 @@ export default definePluginEntry({
     }, { optional: true });
 
     api.registerTool({
+      name: "secopsai_edge_request_report",
+      description: "Create a Core session and request approval before generating the current Edge report through the local helper.",
+      parameters: Type.Object({
+        sessionId: Type.Optional(sessionIdField),
+      }),
+      async execute(_id, params) {
+        let sessionId = params.sessionId;
+        if (!sessionId) {
+          const sessionResult = runSecOpsAI(secopsPath, withSessionDir([
+            "session",
+            "create",
+            "--kind",
+            "edge_report",
+            "--title",
+            "Generate approved Edge report",
+          ]));
+          sessionId = String(sessionResult.session?.session_id || "");
+          if (!sessionId) throw new Error("Core did not return a session ID for the Edge report request");
+        }
+        const approval = runSecOpsAI(secopsPath, withSessionDir([
+          "session",
+          "request-approval",
+          sessionId,
+          "--type",
+          "custom",
+          "--summary",
+          "Generate the current Edge report",
+          "--payload",
+          JSON.stringify({ kind: "edge_report" }),
+        ]));
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({ sessionId, ...approval }, null, 2),
+          }],
+        };
+      },
+    }, { optional: true });
+
+    api.registerTool({
+      name: "secopsai_edge_request_worker_action",
+      description: "Create a Core approval request to start or stop the local Edge worker service. No service mutation occurs until approval.",
+      parameters: Type.Object({
+        action: Type.String({
+          enum: ["start", "stop"],
+          description: "Worker lifecycle action requiring operator approval",
+        }),
+        sessionId: Type.Optional(sessionIdField),
+      }),
+      async execute(_id, params) {
+        let sessionId = params.sessionId;
+        if (!sessionId) {
+          const sessionResult = runSecOpsAI(secopsPath, withSessionDir([
+            "session",
+            "create",
+            "--kind",
+            "edge_worker",
+            "--title",
+            `Apply approved Edge worker action: ${params.action}`,
+            "--metadata",
+            JSON.stringify({ action: params.action }),
+          ]));
+          sessionId = String(sessionResult.session?.session_id || "");
+          if (!sessionId) throw new Error("Core did not return a session ID for the Edge worker request");
+        }
+        const approval = runSecOpsAI(secopsPath, withSessionDir([
+          "session",
+          "request-approval",
+          sessionId,
+          "--type",
+          "custom",
+          "--summary",
+          `Apply Edge worker action: ${params.action}`,
+          "--payload",
+          JSON.stringify({ kind: "edge_worker", action: params.action }),
+        ]));
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify({ sessionId, ...approval }, null, 2),
+          }],
+        };
+      },
+    }, { optional: true });
+
+    api.registerTool({
       name: "secopsai_edge_changes",
       description: "Show recently changed Edge graph nodes and relationships from the local Core store.",
       parameters: Type.Object({
