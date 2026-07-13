@@ -50,6 +50,9 @@ Add to your OpenClaw configuration:
 | Tool | Description | Safety |
 |------|-------------|--------|
 | `secopsai_list_findings` | List findings by status/severity | Read-only |
+| `secopsai_edge_assets` | List Edge-discovered assets imported into Core | Read-only |
+| `secopsai_edge_changes` | Show recent Edge graph changes | Read-only |
+| `secopsai_edge_findings` | List Edge-origin Core findings | Read-only |
 | `secopsai_investigate_finding` | Run native triage investigation for a finding | Read-only |
 | `secopsai_investigate_with_sources` | Investigate a finding and attach a source-backed research report | Read-only |
 | `secopsai_research_finding` | Generate a source-backed report for a finding | Read-only |
@@ -72,6 +75,11 @@ Add to your OpenClaw configuration:
 ```
 # List open findings
 secopsai_list_findings status=open limit=20
+
+# Review Edge assets and changes already synced into Core
+secopsai_edge_assets limit=50
+secopsai_edge_changes limit=25
+secopsai_edge_findings status=open limit=20
 
 # Investigate a supply-chain finding
 secopsai_investigate_finding findingId=SCM-FA4BAE45589358A2
