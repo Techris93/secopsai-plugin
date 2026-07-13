@@ -126,6 +126,29 @@ export default definePluginEntry({
     });
 
     api.registerTool({
+      name: "secopsai_edge_sync_status",
+      description: "Show recent Edge-to-Core sync freshness and contract metadata from the local Core store.",
+      parameters: Type.Object({
+        limit: Type.Optional(Type.Number({
+          default: 20,
+          minimum: 1,
+          maximum: 500,
+          description: "Maximum sync records to return",
+        })),
+      }),
+      async execute(_id, params) {
+        const args = withDbPath(["edge", "status", "--limit", String(params.limit || 20)]);
+        const result = runSecOpsAI(secopsPath, args);
+        return {
+          content: [{
+            type: "text",
+            text: JSON.stringify(result, null, 2),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
       name: "secopsai_edge_findings",
       description: "List SecOpsAI Edge-origin findings from the canonical local Core triage store.",
       parameters: Type.Object({
