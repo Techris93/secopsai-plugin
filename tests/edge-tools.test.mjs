@@ -14,7 +14,7 @@ async function makeFakeCore() {
   await mkdir(bin, { recursive: true });
   await writeFile(
     join(bin, "secopsai"),
-    `#!/bin/sh\nprintf '%s\\n' "$@" > "${argsFile}"\ncase "$*" in\n  *"graph assets"*) printf '%s\\n' '{"assets":[{"ip_address":"192.168.1.10","status":"active","vendor":"Acme","hostname":"desk"}]}' ;;\n  *"triage list"*) printf '%s\\n' '{"findings":[{"finding_id":"EDGE-ABC123","severity":"high","status":"open","title":"Risky service"}]}' ;;\n  *) printf '%s\\n' '{"nodes":[],"edges":[]}' ;;\nesac\n`,
+    `#!/bin/sh\nprintf '%s\\n' "$@" > "${argsFile}"\ncase "$*" in\n  *"graph assets"*) printf '%s\\n' '{"assets":[{"ip_address":"192.168.1.10","status":"active","vendor":"Acme","hostname":"desk"}]}' ;;\n  *"edge status"*) printf '%s\\n' '{"sync_state":[{"source_instance":"secopsai_edge:api:org","schema_version":"secopsai.edge.bundle.v1","last_synced_at":"2026-07-13T19:00:00Z"}]}' ;;\n  *"triage list"*) printf '%s\\n' '{"findings":[{"finding_id":"EDGE-ABC123","severity":"high","status":"open","title":"Risky service"}]}' ;;\n  *) printf '%s\\n' '{"nodes":[],"edges":[]}' ;;\nesac\n`,
   );
   await chmod(join(bin, "secopsai"), 0o755);
   return { root, argsFile };
@@ -44,8 +44,8 @@ test("Edge tools invoke the canonical Core CLI contract", async (t) => {
   const tools = registerTools({ secopsaiPath: fake.root, socDbPath: dbPath });
 
   assert.deepEqual(
-    ["secopsai_edge_assets", "secopsai_edge_changes", "secopsai_edge_findings"].filter((name) => tools.has(name)),
-    ["secopsai_edge_assets", "secopsai_edge_changes", "secopsai_edge_findings"],
+    ["secopsai_edge_assets", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"].filter((name) => tools.has(name)),
+    ["secopsai_edge_assets", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"],
   );
 
   const assets = await tools.get("secopsai_edge_assets").execute("call-1", { limit: 7 });
@@ -61,7 +61,14 @@ test("Edge tools invoke the canonical Core CLI contract", async (t) => {
     ["graph", "changes", "--limit", "9", "--db-path", dbPath, "--json"],
   );
 
-  const findings = await tools.get("secopsai_edge_findings").execute("call-3", { status: "open", limit: 11 });
+  const syncStatus = await tools.get("secopsai_edge_sync_status").execute("call-3", { limit: 13 });
+  assert.match(syncStatus.content[0].text, /secopsai_edge:api:org/);
+  assert.deepEqual(
+    (await readFile(fake.argsFile, "utf8")).trim().split("\n"),
+    ["edge", "status", "--limit", "13", "--db-path", dbPath, "--json"],
+  );
+
+  const findings = await tools.get("secopsai_edge_findings").execute("call-4", { status: "open", limit: 11 });
   assert.match(findings.content[0].text, /EDGE-ABC123/);
   assert.deepEqual(
     (await readFile(fake.argsFile, "utf8")).trim().split("\n"),
