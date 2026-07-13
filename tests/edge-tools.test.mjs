@@ -105,4 +105,16 @@ test("Edge tools invoke the canonical Core CLI contract", async (t) => {
     (await readFile(fake.argsFile, "utf8")).trim().split("\n"),
     ["triage", "list", "--source", "secopsai_edge", "--db-path", dbPath, "--status", "open", "--limit", "11", "--json"],
   );
+
+  const packageResearch = await tools.get("secopsai_research_package").execute("call-7", {
+    ecosystem: "nuget",
+    packageName: "Braintree.Payments.SDK",
+    version: "4.2.1",
+    searchRoot: fake.root,
+  });
+  assert.match(packageResearch.content[0].text, /nodes/);
+  assert.deepEqual(
+    (await readFile(fake.argsFile, "utf8")).trim().split("\n"),
+    ["research", "package", "--ecosystem", "nuget", "--package", "Braintree.Payments.SDK", "--search-root", fake.root, "--version", "4.2.1", "--json"],
+  );
 });
