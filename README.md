@@ -38,6 +38,7 @@ Add to your OpenClaw configuration:
       "secopsai_close_finding",
       "secopsai_triage_orchestrate",
       "secopsai_triage_apply_action",
+      "secopsai_edge_request_scan",
       "secopsai_session_request_close_approval",
       "secopsai_session_request_action_approval",
       "secopsai_session_resolve_approval"
@@ -54,6 +55,7 @@ Add to your OpenClaw configuration:
 | `secopsai_edge_assets` | List Edge-discovered assets imported into Core | Read-only |
 | `secopsai_edge_worker_status` | Check the local Edge worker service | Read-only |
 | `secopsai_edge_scan_preview` | Preview safe Nmap commands for an authorized private CIDR | Read-only |
+| `secopsai_edge_request_scan` | Create a Core approval request to queue an authorized scan through the local worker | Write approval request (optional) |
 | `secopsai_edge_changes` | Show recent Edge graph changes | Read-only |
 | `secopsai_edge_sync_status` | Show Edge-to-Core sync freshness | Read-only |
 | `secopsai_edge_findings` | List Edge-origin Core findings | Read-only |
@@ -84,6 +86,8 @@ secopsai_list_findings status=open limit=20
 secopsai_edge_assets limit=50
 secopsai_edge_worker_status
 secopsai_edge_scan_preview targetCidr=192.168.1.0/24
+# Request a scan; an operator must approve it before the Edge worker queues it
+secopsai_edge_request_scan targetCidr=192.168.1.0/24 includeWifi=false
 secopsai_edge_changes limit=25
 secopsai_edge_sync_status limit=20
 secopsai_edge_findings status=open limit=20
@@ -135,7 +139,7 @@ secopsai_close_finding sessionId=SES-3f6a12bc45de findingId=SCM-FA4BAE45589358A2
 secopsai_triage_summary
 ```
 
-Write-facing tools request approvals or run with auto-apply disabled. Use `secopsai_session_resolve_approval decision=approved apply=true` to apply an approved close or queued action.
+Write-facing tools request approvals or run with auto-apply disabled. Use `secopsai_session_resolve_approval decision=approved apply=true` to apply an approved close, queued action, or Edge scan request. The configured Edge helper reads its own scoped cloud credentials; the plugin never receives or prints them.
 
 ## Development
 
