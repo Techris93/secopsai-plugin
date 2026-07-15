@@ -50,6 +50,11 @@ test("finding identifiers include Edge findings", () => {
   assert.equal(pattern.test("edge-abc123"), false);
 });
 
+test("plugin declares compatibility with the current OpenClaw API", async () => {
+  const manifest = JSON.parse(await readFile(join(process.cwd(), "package.json"), "utf8"));
+  assert.equal(manifest.openclaw.compat.pluginApi, ">=2026.6.10");
+});
+
 test("Edge tools invoke the canonical Core CLI contract", async (t) => {
   const fake = await makeFakeCore();
   const fakeEdge = await makeFakeEdge();
