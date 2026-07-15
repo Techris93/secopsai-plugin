@@ -27,5 +27,36 @@
       }
     },
     "additionalProperties": false
+  },
+  "contracts": {
+    "tools": [
+      "secopsai_list_findings",
+      "secopsai_edge_assets",
+      "secopsai_edge_worker_status",
+      "secopsai_edge_release_check",
+      "secopsai_edge_scan_preview",
+      "secopsai_edge_request_scan",
+      "secopsai_edge_request_report",
+      "secopsai_edge_request_worker_action",
+      "secopsai_edge_changes",
+      "secopsai_edge_sync_status",
+      "secopsai_edge_findings",
+      "secopsai_investigate_finding",
+      "secopsai_investigate_with_sources",
+      "secopsai_research_finding",
+      "secopsai_research_package",
+      "secopsai_review_release_with_sources",
+      "secopsai_close_finding",
+      "secopsai_session_list",
+      "secopsai_session_show",
+      "secopsai_session_request_close_approval",
+      "secopsai_session_request_action_approval",
+      "secopsai_session_resolve_approval",
+      "secopsai_supply_chain_suggest_fp_action",
+      "secopsai_triage_orchestrate",
+      "secopsai_triage_queue",
+      "secopsai_triage_apply_action",
+      "secopsai_triage_summary"
+    ]
   }
 }

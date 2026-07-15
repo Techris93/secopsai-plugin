@@ -55,6 +55,13 @@ test("plugin declares compatibility with the current OpenClaw API", async () => 
   assert.equal(manifest.openclaw.compat.pluginApi, ">=2026.6.10");
 });
 
+test("plugin manifest declares every registered tool", async () => {
+  const manifest = JSON.parse(await readFile(join(process.cwd(), "openclaw.plugin.json"), "utf8"));
+  const registered = [...registerTools({}).keys()].sort();
+  const declared = [...manifest.contracts.tools].sort();
+  assert.deepEqual(declared, registered);
+});
+
 test("Edge tools invoke the canonical Core CLI contract", async (t) => {
   const fake = await makeFakeCore();
   const fakeEdge = await makeFakeEdge();
