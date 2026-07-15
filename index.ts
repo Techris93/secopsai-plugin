@@ -144,6 +144,20 @@ export default definePluginEntry({
     });
 
     api.registerTool({
+      name: "secopsai_edge_release_check",
+      description: "Compare the local Edge worker with the hosted release using the sensor-scoped credential; this is read-only and never downloads or upgrades anything.",
+      parameters: Type.Object({}),
+      async execute() {
+        return {
+          content: [{
+            type: "text",
+            text: runEdgeScript(edgePath, ["worker", "release-check", "--cloud"]),
+          }],
+        };
+      },
+    });
+
+    api.registerTool({
       name: "secopsai_edge_scan_preview",
       description: "Preview the safe local Nmap commands for an authorized private CIDR; this does not execute a scan or upload data.",
       parameters: Type.Object({

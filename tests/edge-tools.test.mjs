@@ -27,7 +27,7 @@ async function makeFakeEdge() {
   await mkdir(scripts, { recursive: true });
   await writeFile(
     join(scripts, "edge"),
-    `#!/bin/sh\nprintf '%s\\n' "$@" > "${argsFile}"\ncase "$*" in\n  *"worker status"*) printf '%s\\n' 'Worker service: running (ai.secopsai.edge)' ;;\n  *"preview 192.168.1.0/24"*) printf '%s\\n' '{"target_cidr":"192.168.1.0/24","commands":["nmap"]}' ;;\n  *) printf '%s\\n' 'unexpected command' ;;\nesac\n`,
+    `#!/bin/sh\nprintf '%s\\n' "$@" > "${argsFile}"\ncase "$*" in\n  *"worker status"*) printf '%s\\n' 'Worker service: running (ai.secopsai.edge)' ;;\n  *"worker release-check --cloud"*) printf '%s\\n' 'Release status:      current' ;;\n  *"preview 192.168.1.0/24"*) printf '%s\\n' '{"target_cidr":"192.168.1.0/24","commands":["nmap"]}' ;;\n  *) printf '%s\\n' 'unexpected command' ;;\nesac\n`,
   );
   await chmod(join(scripts, "edge"), 0o755);
   return { root, argsFile };
@@ -61,8 +61,8 @@ test("Edge tools invoke the canonical Core CLI contract", async (t) => {
   const tools = registerTools({ secopsaiPath: fake.root, edgePath: fakeEdge.root, socDbPath: dbPath });
 
   assert.deepEqual(
-    ["secopsai_edge_assets", "secopsai_edge_worker_status", "secopsai_edge_scan_preview", "secopsai_edge_request_scan", "secopsai_edge_request_report", "secopsai_edge_request_worker_action", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"].filter((name) => tools.has(name)),
-    ["secopsai_edge_assets", "secopsai_edge_worker_status", "secopsai_edge_scan_preview", "secopsai_edge_request_scan", "secopsai_edge_request_report", "secopsai_edge_request_worker_action", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"],
+    ["secopsai_edge_assets", "secopsai_edge_worker_status", "secopsai_edge_release_check", "secopsai_edge_scan_preview", "secopsai_edge_request_scan", "secopsai_edge_request_report", "secopsai_edge_request_worker_action", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"].filter((name) => tools.has(name)),
+    ["secopsai_edge_assets", "secopsai_edge_worker_status", "secopsai_edge_release_check", "secopsai_edge_scan_preview", "secopsai_edge_request_scan", "secopsai_edge_request_report", "secopsai_edge_request_worker_action", "secopsai_edge_changes", "secopsai_edge_sync_status", "secopsai_edge_findings"],
   );
 
   const assets = await tools.get("secopsai_edge_assets").execute("call-1", { limit: 7 });
@@ -77,6 +77,13 @@ test("Edge tools invoke the canonical Core CLI contract", async (t) => {
   assert.deepEqual(
     (await readFile(fakeEdge.argsFile, "utf8")).trim().split("\n"),
     ["worker", "status"],
+  );
+
+  const releaseCheck = await tools.get("secopsai_edge_release_check").execute("call-2b", {});
+  assert.match(releaseCheck.content[0].text, /Release status:\s+current/);
+  assert.deepEqual(
+    (await readFile(fakeEdge.argsFile, "utf8")).trim().split("\n"),
+    ["worker", "release-check", "--cloud"],
   );
 
   const preview = await tools.get("secopsai_edge_scan_preview").execute("call-3", { targetCidr: "192.168.1.0/24" });
