@@ -40,8 +40,11 @@ export default definePluginEntry({
 
   register(api: PluginAPI) {
     const config = api.config as SecOpsAIConfig;
-    const secopsPath = config.secopsaiPath || "~/secopsai";
-    const edgePath = config.edgePath || "~/secopsai-edge";
+    // Embedded OpenClaw runs may not pass plugin config through api.config.
+    // Environment fallbacks keep local agent turns pointed at the installed
+    // repositories without overriding explicit plugin configuration.
+    const secopsPath = config.secopsaiPath || process.env.SECOPSAI_CORE_PATH || "~/secopsai";
+    const edgePath = config.edgePath || process.env.SECOPSAI_EDGE_PATH || "~/secopsai-edge";
     const sessionIdField = Type.String({
       pattern: "^SES-[0-9a-f]{12}$",
       description: "Session ID such as SES-3f6a12bc45de",

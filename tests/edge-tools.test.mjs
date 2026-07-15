@@ -62,6 +62,31 @@ test("plugin manifest declares every registered tool", async () => {
   assert.deepEqual(declared, registered);
 });
 
+test("embedded agent environment can provide repository paths when config is absent", async (t) => {
+  const fake = await makeFakeCore();
+  const fakeEdge = await makeFakeEdge();
+  const previousCore = process.env.SECOPSAI_CORE_PATH;
+  const previousEdge = process.env.SECOPSAI_EDGE_PATH;
+  t.after(async () => {
+    if (previousCore === undefined) delete process.env.SECOPSAI_CORE_PATH;
+    else process.env.SECOPSAI_CORE_PATH = previousCore;
+    if (previousEdge === undefined) delete process.env.SECOPSAI_EDGE_PATH;
+    else process.env.SECOPSAI_EDGE_PATH = previousEdge;
+    await rm(fake.root, { recursive: true, force: true });
+    await rm(fakeEdge.root, { recursive: true, force: true });
+  });
+  process.env.SECOPSAI_CORE_PATH = fake.root;
+  process.env.SECOPSAI_EDGE_PATH = fakeEdge.root;
+
+  const tools = registerTools({});
+  const workerStatus = await tools.get("secopsai_edge_worker_status").execute("env-call-1", {});
+  assert.match(workerStatus.content[0].text, /Worker service: running/);
+  assert.deepEqual(
+    (await readFile(join(fakeEdge.root, "args.txt"), "utf8")).trim().split("\n"),
+    ["worker", "status"],
+  );
+});
+
 test("Edge tools invoke the canonical Core CLI contract", async (t) => {
   const fake = await makeFakeCore();
   const fakeEdge = await makeFakeEdge();

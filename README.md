@@ -54,6 +54,12 @@ Add to your OpenClaw configuration:
 }
 ```
 
+For embedded/local OpenClaw agent runs that do not pass plugin configuration
+through to `api.config`, set `SECOPSAI_CORE_PATH` and `SECOPSAI_EDGE_PATH` in
+the agent's environment. Explicit plugin configuration takes precedence over
+these fallbacks. `SECOPSAI_EDGE_PATH` must point to the Edge checkout or
+release installation containing `scripts/edge`.
+
 ## Tools
 
 | Tool | Description | Safety |
