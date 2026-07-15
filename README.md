@@ -4,6 +4,10 @@ Native SecOpsAI findings, triage orchestration, queued action handling, and supp
 
 This release executes the local `secopsai` venv binary directly with structured argv arguments instead of shell-building command strings, reducing command-injection risk compared with the earlier release.
 
+The package declares compatibility with OpenClaw `2026.6.10` and newer API
+releases. Update OpenClaw before installing if the runtime reports an older
+plugin API.
+
 ## Installation
 
 ```bash
